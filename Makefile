@@ -89,5 +89,5 @@ test-sauce: node_modules build.js
 .PHONY: test-sauce
 
 # Test shortcut.
-test: lint test-phantomjs
+test: test-phantomjs
 .PHONY: test

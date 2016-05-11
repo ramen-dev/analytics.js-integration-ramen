@@ -30,7 +30,7 @@ describe('Ramen', function() {
   it('should have the right settings', function() {
     analytics.compare(Ramen, integration('Ramen')
       .global('Ramen')
-      .global('ramenSettings')
+      .global('_ramen')
       .option('organization_id', '')
       .tag('<script src="//cdn.ramen.is/assets/ramen.js">'));
   });
@@ -46,6 +46,13 @@ describe('Ramen', function() {
         analytics.initialize();
         analytics.page();
         analytics.assert(!window.Ramen);
+      });
+
+      it('should create window._ramen', function() {
+        analytics.assert(!window._ramen);
+        analytics.initialize();
+        analytics.page();
+        analytics.assert(window._ramen);
       });
 
       it('should call #load', function() {
@@ -70,74 +77,58 @@ describe('Ramen', function() {
 
     describe('#page', function() {
       beforeEach(function() {
-        analytics.stub(window.Ramen, 'go');
+        analytics.stub(window._ramen, 'page');
       });
 
-      it('should not call Ramen.go', function() {
+      it('should call _ramen.page', function() {
         analytics.page();
-        analytics.didNotCall(window.Ramen.go);
-      });
-
-      it('should call Ramen.go twice', function() {
-        analytics.identify('12345', { email: 'ryan@ramen.is' });
-        analytics.page();
-        analytics.calledTwice(window.Ramen.go);
+        analytics.called(window._ramen.page);
       });
     });
 
     describe('#group', function() {
       beforeEach(function() {
-        analytics.stub(window.Ramen, 'go');
+        analytics.stub(window._ramen, 'group');
       });
 
-      describe('with email/id in localstorage', function() {
-        beforeEach(function() {
-          analytics.identify('user-id-x', { email: 'ryan@ramen.is' });
-        });
-
-        it('should call Ramen.go without #identify', function() {
-          analytics.group('id1');
-          analytics.assert(window.ramenSettings.company.id === 'id1');
-          analytics.calledTwice(window.Ramen.go);
+      it('should call _ramen.group', function() {
+        analytics.group('id1');
+        analytics.called(window._ramen.group, {
+          id: 'id1'
         });
       });
     });
 
     describe('#track', function() {
       beforeEach(function() {
-        analytics.stub(window.Ramen.Api, 'track_named');
+        analytics.stub(window._ramen, 'track');
       });
 
-      it('should not call Ramen.Api.track_named before #identify', function() {
-        analytics.track('New signup');
-        analytics.didNotCall(window.Ramen.Api.track_named);
-      });
-
-      it('should call Ramen.Api.track_named when #track is called', function() {
-        analytics.identify('12345', { email: 'ryan@ramen.is' });
-        analytics.track('New signup');
-        analytics.called(window.Ramen.Api.track_named, 'New signup');
+      it('should call _ramen.track with two parameters', function() {
+        analytics.track('New Signup');
+        analytics.called(window._ramen.track, 'New Signup', {});
       });
     });
 
     describe('#identify', function() {
       beforeEach(function() {
-        analytics.stub(window.Ramen, 'go');
+        analytics.stub(window._ramen, 'identify');
       });
 
-      it('should call Ramen.go if only id is passed', function() {
-        analytics.identify('this-users-id');
-        analytics.calledOnce(window.Ramen.go);
+      it('should call _ramen.identify with the id', function() {
+        analytics.identify('New');
+        analytics.called(window._ramen.identify, {
+          id: 'New'
+        });
       });
 
       it('should call Ramen.go and set correct attributes if just email passed', function() {
         var email = 'email@example.com';
         analytics.identify('id', { email: email });
-        analytics.assert(window.ramenSettings.organization_id === '6389149');
-        analytics.assert(window.ramenSettings.user.id === 'id');
-        analytics.assert(typeof window.ramenSettings.user.name === 'undefined');
-        analytics.assert(window.ramenSettings.user.email === email);
-        analytics.called(window.Ramen.go);
+        analytics.called(window._ramen.identify, {
+          id: 'id',
+          email: email
+        }, {});
       });
 
       it('should call Ramen.go and set correct attributes if email & name passed', function() {
